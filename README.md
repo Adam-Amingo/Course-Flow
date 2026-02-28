@@ -35,7 +35,7 @@ The app will open in your browser at `http://localhost:5173`.
 ## 🔑 Login Credentials
 
 **Student Portal:**
-- Email: `aabubakar@st.knust.edu.gh` (Adam Abubakar)
+- Email: `aabubakar@.school.edu.gh` (Adam Amingo)
 
 **Lecturer Portal:**
 - Email: `emily@courseflow.lc` (Dr. Emily Chen)
