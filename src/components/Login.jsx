@@ -25,7 +25,12 @@ const Login = ({ onLogin }) => {
                     setError('Student not found. Try aabubakar@st.knust.edu.gh');
                 }
             } else if (email.endsWith('@lc.knust.edu.gh')) {
-                onLogin({ role: 'lecturer', data: { name: 'Dr. Emily Chen', department: 'Computer Science' } });
+                const lecturer = db.lecturers.find(l => l.email === email);
+                if (lecturer) {
+                    onLogin({ role: 'lecturer', data: lecturer });
+                } else {
+                    setError('Lecturer not found. Try linda@lc.knust.edu.gh');
+                }
             } else {
                 setError('Invalid domain. Use @st.knust.edu.gh for Students or @lc.knust.edu.gh for Lecturers.');
             }
