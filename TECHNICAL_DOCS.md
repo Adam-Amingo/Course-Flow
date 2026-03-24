@@ -1,82 +1,133 @@
-# CourseFlow Technical Documentation
+# CourseFlow - Comprehensive Technical Documentation
 
-This document provides a technical overview of the CourseFlow application. It covers the core architecture, data management, environment setup, and how to extend the application's functionality.
-
----
-
-## 1. Tech Stack Overview
-
-CourseFlow is a modern single-page application built around performance and visual excellence:
-*   **Core:** React 18, utilizing modern function components and Hooks (`useState`, `useEffect`).
-*   **Build Tool:** Vite, configured for blazing fast Hot Module Replacement (HMR) and optimized production builds.
-*   **Styling:** Vanilla Tailwind CSS (`v3.4`) layered upon custom PostCSS configs stringing standard utility classes into complex interfaces (Glassmorphism, contextual blur, and gradient animations).
-*   **Icons:** Lucide React (`lucide-react`) for consistent, scalable SVG iconography.
-*   **Routing & State:** The application is entirely client-side. Global state currently orchestrates view rendering inside `App.jsx` dynamically, acting as a lightweight Router.
+This document serves as the complete technical blueprint for the **CourseFlow** architecture. It is written for developers, maintainers, and platform engineers tasked with understanding, maintaining, scaling, or migrating the system.
 
 ---
 
-## 2. Global Architecture and Component Tree
+## 1. Technology Stack
 
-The main entry point is `src/main.jsx` mapping to `index.html`. 
+CourseFlow adopts a modern, lightweight, and highly dynamic frontend architecture:
 
-`App.jsx` handles global state orchestration:
+*   **Framework:** React 18+ (Strict functional component patterns, Hooks)
+*   **Module Bundler:** Vite (Chosen for sub-second hot-module replacement and optimized ESBuild compilation)
+*   **Styling Engine:** Tailwind CSS `v3.4`
+    *   *Design System:* Utilizes glassmorphism, native color palettes (`slate`, `indigo`, `emerald`), and robust pseudo-class implementations (`group-hover`, `peer-checked`) for deep interactivity without JavaScript overhead.
+*   **Iconography:** `lucide-react` (Scalable, tree-shakeable SVG icon components mapped to UI states)
+*   **State Management:** Native React hook context lifting (no Redux required for current scope)
+
+---
+
+## 2. Global Architecture & Project Structure
+
+The project conforms to a feature-based separation of concerns:
+
 ```text
-<App>
-  ├─ <Login>
-  ├─ <StudentDashboard> (Role === 'student')
-  │    ├─ <CourseDetail> (activeView === 'course-detail')
-  │    │    ├─ Kanban Board & Pomodoro Focus Timer
-  │    └─ Dashboard Overview
-  │
-  └─ <LecturerDashboard> (Role === 'lecturer')
-       ├─ <LecturerCourseView> (activeView === 'course-detail')
-       │    ├─ Assignment Creation Form
-       │    └─ Submission Tracking Data Table
-       └─ <CreateNoticeModal>
+html/
+├── package.json               # Defines dependencies and NPM scripts (dev, build, lint)
+├── tailwind.config.js         # Tailwind system tokens (fonts, custom animations)
+├── postcss.config.js          # Directs Tailwind plugin compiling
+├── vite.config.js             # Bundler configuration
+├── index.html                 # Application entry point/mounting DOM node
+└── src/
+    ├── main.jsx               # React DOM root render
+    ├── App.jsx                # Global State Controller & Authentication Router
+    ├── index.css              # Global styles and Tailwind directives
+    ├── api/
+    │   └── db.json            # The Simulated Backend (Entity mappings)
+    └── components/
+        ├── Login.jsx              # Authentication Gateway
+        ├── StudentDashboard.jsx   # Root view for @st.knust students
+        ├── CourseDetail.jsx       # Student's Kanban, Resources, and Focus UI
+        ├── LecturerDashboard.jsx  # Root view for @lc.knust lecturers
+        ├── LecturerCourseView.jsx # Lecturer's coursework and grading manager
+        └── CreateNoticeModal.jsx  # Reusable modal for alerts
 ```
-*Routing is completely managed by `useState` hooks monitoring `user` roles and `activeView` states.*
 
 ---
 
-## 3. Data Structure (src/api/db.json)
+## 3. Data Structure & Simulated Backend
 
-The application simulates a backend using a JSON static file (`db.json`) directly imported into components. It initializes state arrays that mimic a relational DB.
+The entire application relies on `src/api/db.json` masking as a NoSQL database. 
 
-**Mock Relational Entities:**
-1.  **Lecturers:** Defines the authentication accounts for teaching staff (`id`, `name`, `email`).
-2.  **Courses:** Defines metadata for courses, but also importantly embeds sub-schemas for **Resources** (PDFs, images) and **Assignments**.
-    *   *Note:* The `lecturer` field in a Course strictly binds to `lecturer.name` or `lecturer.email` to determine ownership.
-3.  **Students:** Defines the authentication accounts for student bodies alongside their Index Numbers and exam scheduling metadata.
+**3.1. Entity Relationships**
+*   **Lecturers:** Master user table (`id`, `name`, `email`, `department`). Bound strictly by email domains (`@lc.knust.edu.gh`).
+*   **Students:** Master user table with metadata (`indexNumber`, `program`, `exams`).
+*   **Courses:** The central hub holding relational arrays:
+    *   `resources[]`: Study materials.
+    *   `assignments[]`: Global coursework.
+    *   *Foreign Key map:* The `course.lecturer` string acts as a foreign key mapping to the exact `lecturer.name` to orchestrate course ownership.
 
-**Authentication Workflow:**
+**3.2. Authentication Check logic (`Login.jsx`)**
+Authentication utilizes simulated network lag (`setTimeout`). It performs a RegEx/String check on domain extensions:
+*   If `@st.knust.edu.gh`: Reads `db.students`. 
+*   If `@lc.knust.edu.gh`: Reads `db.lecturers`. 
+
+---
+
+## 4. State Management and Data Flow
+
+Because this is a standalone frontend prototype, **App.jsx** serves as the Single Source of Truth for mutable data.
+
+### Component Routing
+`activeView` state toggles view rendering without triggering hard browser reloads or utilizing `react-router-dom`:
 ```javascript
-// Located in Login.jsx
-const lecturer = db.lecturers.find(l => l.email === email);
-if(lecturer) onLogin({ role: 'lecturer', data: lecturer });
+// App.jsx Pseudo-logic
+if (!user) return <Login onLogin={handleLogin} />
+if (user.role === 'student' && activeView === 'course-detail') return <CourseDetail/>
+if (user.role === 'lecturer' && activeView === 'course-detail') return <LecturerCourseView/>
+```
+
+### Lifting State via Callbacks
+When a lecturer creates a new assignment, it is pushed to the central `courses` array hosted in `App.jsx`, immediately pushing the update down to the `StudentDashboard.jsx` components where it appears sequentially as a "Pending" Kanban task.
+
+```javascript
+// App.jsx Assignment Handler
+const handleAddAssignment = (courseId, newAssignment) => {
+    setCourses(prev => prev.map(course => {
+        if (course.id === courseId) {
+            return { ...course, assignments: [newAssignment, ...course.assignments] };
+        }
+        return course;
+    }));
+};
 ```
 
 ---
 
-## 4. State Management and Hydration
+## 5. UI/UX Features of Note
 
-Since there is no live API backend (e.g., Node.js or Django), global data mutation happens via React state lifting in `App.jsx`.
-
-**Adding Assignments (Lifting State Up):**
-When a Lecturer creates an assignment in `<LecturerCourseView>`, it calls `onAddAssignment`—a callback passed down from global context.
-The callback finds the matched course by ID in the `courses` array state and spreads a new assignment object into its `assignments` array. 
-*Note: Because this is held in ephemeral React State, resetting the page will wipe out new assignments back to the `db.json` defaults.*
-
-**Submission Tracking Mock Logic:**
-Currently, when a Lecturer expands an assignment card, the backend "submissions" are simulated deterministically using the hash seed of `student.id` + `assignment.id`. This provides a stable UI to test filtering and grading visuals before weaving in an actual database.
+1. **Academic Kanban Board:** Converts flat arrays of assignments into dynamic lane statuses using a fast array filtering loop (`getAssignmentsByStatus('in-progress')`). Task state mutations are locally managed maps simulating drag-and-drop triggers.
+2. **Focus Mode (Pomodoro Engine):** Uses `setInterval` hooks bound to `timerSeconds` state inside an absolute screen overlay logic, providing an isolated, full-screen HUD for studying.
+3. **Exam Locator Orchestrator:** Simulated via local File Input handlers and progressive `setTimeout` timeouts dictating upload progress bars in the `LecturerDashboard.jsx`.
 
 ---
 
-## 5. Deployment Basics
+## 6. Going to Production (Backend Integration Scale-Up)
 
-To deploy this statically (since data is bundled JSON):
-1.  Run `npm run build` in the terminal to invoke Vite's optimizer.
-2.  A `dist/` directory will be generated containing the optimized bundle, CSS, and asset mapping.
-3.  Upload the `dist/` folder directly to services like Vercel, Netlify, Github Pages, or a standard Apache remote.
+When transitioning to a real backend architecture (Node/Express, Django, or Supabase), the following surgical changes must occur:
 
-**Warning for Production:** 
-For a complete system, `db.json` logic should be extracted and rewritten using a RESTful pattern across `fetc API` invoking a remote SQL/NoSQL Database. Then handle JWT Auth inside `Login.jsx`.
+1. **Remove `db.json` Imports:** 
+   Strip out `import db from './api/db.json';` completely.
+2. **Implement Fetch/Axios Actions:**
+   Convert initialization states passing via props into asynchronous API invocations.
+   ```javascript
+   // Replace initial state
+   // const [courses, setCourses] = useState(db.courses);
+   
+   // With Effect hook
+   const [courses, setCourses] = useState([]);
+   useEffect(() => {
+     axios.get('/api/v1/courses').then(res => setCourses(res.data));
+   }, [])
+   ```
+3. **Handle JWT Authentication:** Refactor `Login.jsx` to dispatch credentials via POST, securing an encrypted Bearer token to local browser storage, and deriving the user role securely from the verified token payload.
+
+---
+
+## 7. Developer Scripts
+
+To utilize this environment locally, the standard commands apply:
+
+*   **`npm run dev`**: Spawns the Vite local developer server (Default Port `3001` or `5173`) with HMR.
+*   **`npm run build`**: Compiles absolute production-ready output files inside `/dist`, minifying React into vanilla chunks mapping to `index.html`.
+*   **`npm run lint`**: Analyzes the codebase against React hook compliance standards.

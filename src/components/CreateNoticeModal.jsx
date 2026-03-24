@@ -86,7 +86,7 @@ const CreateNoticeModal = ({ isOpen, onClose, onPost }) => {
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g. Flight 101 Cancellation"
+                            placeholder="e.g. Class 101 Cancellation"
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all font-medium text-slate-900"
                             required
                         />
