@@ -62,7 +62,10 @@ Clicking on any of your teaching courses opens the detailed management view:
 2.  **Tracking Submissions:**
     *   Under **Active Assignments**, you'll see a card for every assignment you've created, along with a completion progress circle.
     *   **Click an Assignment Card** to expand the table.
-    *   The expanded view shows every single student's status (`Submitted`, `Pending`, `Late`), their grade, and allows you to simulate sending a Grade Report or sending a Reminder to late students.
+3.  **Assign Exam Locator:**
+    *   On the Lecturer Dashboard, click the large **Assign Exam Locator** button inside the "My Teaching Courses" section.
+    *   A modal will pop up prompting you to upload a CSV or Excel roster.
+    *   Select your mapping file, and the system will simulate processing the records and automatically bind exam venues and seats to the respective students in their Student Portals.
 
 ---
 

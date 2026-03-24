@@ -1,10 +1,34 @@
 import React, { useState } from 'react';
-import { LogOut, Users, FileText, Bell, Plus, Settings, Search } from 'lucide-react';
+import { LogOut, Users, FileText, Bell, Plus, Settings, Search, Upload, CheckCircle, X } from 'lucide-react';
 import CreateNoticeModal from './CreateNoticeModal';
 import { clsx } from 'clsx';
 
 const LecturerDashboard = ({ user, notices, courses, onSelectCourse, onPostNotice, onLogout }) => {
     const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+    const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+    const [uploadState, setUploadState] = useState('idle'); // 'idle' | 'uploading' | 'success'
+    const [uploadProgress, setUploadProgress] = useState(0);
+
+    const handleFileUpload = (e) => {
+        if (!e.target.files.length) return;
+        setUploadState('uploading');
+        setUploadProgress(0);
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 20;
+            setUploadProgress(progress);
+            if (progress >= 100) {
+                clearInterval(interval);
+                setUploadState('success');
+                setTimeout(() => {
+                    setIsExamModalOpen(false);
+                    setUploadState('idle');
+                    setUploadProgress(0);
+                }, 2000);
+            }
+        }, 300);
+    };
 
     return (
         <div className="min-h-screen bg-slate-900 font-sans text-slate-100 selection:bg-indigo-500 selection:text-white">
@@ -126,6 +150,17 @@ const LecturerDashboard = ({ user, notices, courses, onSelectCourse, onPostNotic
                                     <span className="font-semibold text-lg">Broadcast Notice</span>
                                     <span className="text-sm opacity-70 mt-1">Send alerts to all students</span>
                                 </button>
+                                {/* Exam Locator Action Card */}
+                                <button
+                                    onClick={() => setIsExamModalOpen(true)}
+                                    className="p-6 border border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center text-slate-500 hover:bg-slate-800/50 hover:text-indigo-400 hover:border-indigo-500/50 transition-all group min-h-[240px]"
+                                >
+                                    <div className="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center mb-4 group-hover:bg-indigo-500/10 transition-colors shadow-lg">
+                                        <Upload className="w-6 h-6" />
+                                    </div>
+                                    <span className="font-semibold text-lg">Assign Exam Locator</span>
+                                    <span className="text-sm opacity-70 mt-1">Upload seat mappings</span>
+                                </button>
                             </div>
                         </section>
 
@@ -177,6 +212,54 @@ const LecturerDashboard = ({ user, notices, courses, onSelectCourse, onPostNotic
                     onClose={() => setIsNoticeModalOpen(false)}
                     onPost={onPostNotice}
                 />
+
+                {/* Exam Locator Modal */}
+                {isExamModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl relative">
+                            <button
+                                onClick={() => setIsExamModalOpen(false)}
+                                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+
+                            <h2 className="text-xl font-bold font-display text-white mb-2">Upload Exam Roster</h2>
+                            <p className="text-sm text-slate-400 mb-6">Upload an Excel or CSV file mapping student index numbers to their exam venues and seats.</p>
+
+                            {uploadState === 'idle' && (
+                                <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-slate-700 border-dashed rounded-xl cursor-pointer bg-slate-800/50 hover:bg-slate-800 hover:border-indigo-500 transition-all group">
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <Upload className="w-8 h-8 text-slate-400 group-hover:text-indigo-400 mb-3 transition-colors" />
+                                        <p className="mb-2 text-sm text-slate-300"><span className="font-semibold text-indigo-400">Click to upload</span> or drag and drop</p>
+                                        <p className="text-xs text-slate-500">CSV, XLSX (MAX. 10MB)</p>
+                                    </div>
+                                    <input type="file" className="hidden" accept=".csv, .xlsx" onChange={handleFileUpload} />
+                                </label>
+                            )}
+
+                            {uploadState === 'uploading' && (
+                                <div className="space-y-4 py-8">
+                                    <div className="flex justify-between text-sm font-medium">
+                                        <span className="text-slate-300">Processing records...</span>
+                                        <span className="text-indigo-400">{uploadProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                                        <div className="bg-indigo-500 h-2 rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }}></div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {uploadState === 'success' && (
+                                <div className="flex flex-col items-center justify-center py-6 text-emerald-400 animate-in zoom-in-95 duration-300">
+                                    <CheckCircle className="w-16 h-16 mb-4" />
+                                    <h3 className="text-lg font-bold text-white mb-1">Upload Successful!</h3>
+                                    <p className="text-center text-sm text-slate-400">142 students have been automatically assigned to their exam locators.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
