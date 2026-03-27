@@ -117,8 +117,8 @@ const CourseDetail = ({ course, onBack }) => {
             </header>
 
             {/* Navigation Tabs */}
-            <div className="border-b border-slate-200 bg-white sticky top-0 z-20 shadow-sm">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="border-b border-slate-200 bg-white sticky top-0 z-20 shadow-sm overflow-x-auto no-scrollbar">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 min-w-max">
                     <div className="flex gap-8">
                         <button
                             onClick={() => setActiveTab('resources')}
